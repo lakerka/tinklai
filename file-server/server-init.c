@@ -1,7 +1,17 @@
 #include "server.h"
 /*#include "common.h"*/
 int main(void) {
+    /*char paketas[] = "X";*/
+    /*paketas[1] = 'O';*/
+    /*printf("%s\n", paketas);*/
+    /*marshalPacket(paketas);*/
+    /*printf("%s\n", paketas);*/
 
+    /*unmarshalPacket(paketas);*/
+    /*printf("%s\n", paketas);*/
+    /*return 0;*/
+    /*printf("%lu", sizeof(char));*/
+    /*printf("%lu", sizeof(int));*/
     /*char eil[] = {"15:mano"};*/
     /*UnmarshalPacket(eil);*/
     SOCKET ServSockDesc;
