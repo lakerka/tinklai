@@ -46,6 +46,7 @@ int main(void) {
     maxKnowSocketDesc = servSockDesc;
     // Pagrindinis amzinas ciklas, kuris palaiko serveri rezimu "gyvas".
 
+    /*printf("%d\n", maxKnowSocketDesc);*/
     while (1){
 
         // Kiekvienoje iteracijoje inicializuokime pagalbine soketu aibe pagrindine.
@@ -54,7 +55,18 @@ int main(void) {
         if (SOCKET_ERROR == select (maxKnowSocketDesc + 1, &tempSet, NULL, NULL, &TimeVal)) {
             exit(EXIT_FAILURE);
         }
-
+        /*int first =  1;*/
+        /*for (iCounter = 0; iCounter <= maxKnowSocketDesc; iCounter++) {*/
+            /*// Tikriname su kiekviena skaitliuko reiksme, */
+            /*// ar jo aprasomas soketas nepriklauso pagrindinei soketu aibei.*/
+            /*if (FD_ISSET (iCounter, &tempSet)) {*/
+                /*if (first == 1) {*/
+                    /*printf("Aktyviu soketu aibeje yra: \n");*/
+                    /*first = 0;*/
+                /*}*/
+                /*printf("%d\n", iCounter);*/
+            /*}*/
+        /*}*/
         /*Musu sukurto serverio soketas klausosi. 
          * Jeigu kas nors nori i ji rasyti tada, 
          * mums reikia priimti nauja prisijungima. 
@@ -76,22 +88,22 @@ int main(void) {
                 if (iCounter == servSockDesc) {
                     // Apdorojame nauja prisijungima.
 
-                    if (SOCKET_ERROR == handleNewConnection (&servSockDesc, &maxKnowSocketDesc, &mainSocketSet)) {
+                    if (SOCKET_ERROR == handleNewConnection (&servSockDesc, 
+                                &maxKnowSocketDesc, &mainSocketSet)) {
                         printf ("Server error: acceptance of new connection was erroneous.\n");
                     }
 
-                    printf("\nSiunciame pasveikima naujai prisijungusiam varotojui.\n");
-                    char greeting[] = "Sveiki prisijunge prie musu serverio!";
-                    sendData(&maxKnowSocketDesc, greeting);
+                    /*printf("%d\n", maxKnowSocketDesc);*/
                 }
+
+                // Jei tai ne nauju prisijungimu laukiancio soketo 
+                // deskriptorius, tai reiskia, kad gauta informacija 
+                // is kazkurio prisijungusio kliento.
+                // Reikia ja priimti ir atitinkamai apdoroti.
                 else {
-                    // Jei tai ne nauju prisijungimu laukiancio soketo 
-                    // deskriptorius, tai reiskia, kad gauta informacija 
-                    // is kazkurio prisijungusio kliento.
-                    // Reikia ja priimti ir atitinkamai apdoroti.
-                    //
+                    /*printf("Meginame gauti duomenis\n");     */
                     // Priimame ir apdorojame pranesima.
-                    /*HandleDataFromClient ((SOCKET)iCounter, &mainSocketSet);*/
+                    handleDataFromClient ((SOCKET)iCounter, &mainSocketSet);
                 }
             }
         }

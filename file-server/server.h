@@ -39,8 +39,8 @@
 unsigned int maxDesc;			// Maximalus is dabar egzistojanciu soketu deskriptoriaus nr.
 fd_set mainSocketSet;			// Pagrindines programos soketu aibe.
 
-SOCKET InitializeServer ( void );
+SOCKET initializeServer ( void );
 
-int HandleNewConnection ( SOCKET*, unsigned int*, fd_set* );
-void HandleDataFromClient ( SOCKET, fd_set*, fd_set*, fd_set* );
+int handleNewConnection ( SOCKET*, unsigned int*, fd_set* );
+void handleDataFromClient ( SOCKET, fd_set*);
 

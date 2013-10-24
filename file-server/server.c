@@ -88,11 +88,11 @@ SOCKET initializeServer (void) {
 
 
 // Nauju prisijungimu apdorojimas.
-int handleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *MainSet) {
-	struct sockaddr_in RemoteAddress;	// Struktura bandancio prisijungti adresui.
-	SOCKET NewConnectionDesc;			// Soketo deskriptorius bendravimui su nauju klientu.
-	int AddressSize;					// Adreso strukturos dydziui saugoti.
-	char Buffer [1000] = {0};			// Buferis pasveikinimo informacijai laikyti.
+int handleNewConnection (SOCKET *servSockDesc, unsigned int *maxDesc, fd_set *mainSocketSet) {
+	struct sockaddr_in remoteAddress;	// Struktura bandancio prisijungti adresui.
+	SOCKET newConnectionDesc;			// Soketo deskriptorius bendravimui su nauju klientu.
+	int addressSize;					// Adreso strukturos dydziui saugoti.
+	char buffer [1000] = {0};			// Buferis pasveikinimo informacijai laikyti.
 	struct hostent *HostEntry;			// Struktura informacijai apie nauja klienta.
 #ifdef WIN32OS
 	const char yes = '1';
@@ -102,19 +102,19 @@ int handleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *Ma
 
 
 	//Inicializuojame adreso strukturos dydzio kintamaji.
-	AddressSize = sizeof (struct sockaddr_in);
+	addressSize = sizeof (struct sockaddr_in);
 
 
 	// Bandome priimti nauja prisijungima ir sukurti deskriptoriu.
 	// bendravimui su juo.
-	if (SOCKET_ERROR == (NewConnectionDesc =
-		accept ((*ServSockDesc), (struct sockaddr *)&RemoteAddress, &AddressSize))) {
+	if (SOCKET_ERROR == (newConnectionDesc =
+		accept ((*servSockDesc), (struct sockaddr *)&remoteAddress, &addressSize))) {
 		return SOCKET_ERROR;
     }
 
 
 	// Uzdedame opcija soketo adreso ir porto pakartotinam panaudojimui.
-	if (SOCKET_ERROR == setsockopt (NewConnectionDesc,
+	if (SOCKET_ERROR == setsockopt (newConnectionDesc,
 		SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (yes))) {
 		return SOCKET_ERROR;
     }
@@ -122,103 +122,87 @@ int handleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *Ma
 
 	// Paskelbiam apie prisijungima serveryje.
 	printf ("Server: new connection from \'%s\' accepted successfully.\n",
-		inet_ntoa (RemoteAddress.sin_addr));
+		inet_ntoa (remoteAddress.sin_addr));
 
 
 	// Gauname informacija apie prisijungusi klienta.
-	if (NULL == (HostEntry = gethostbyaddr ((void*)&(RemoteAddress.sin_addr),
-		sizeof (RemoteAddress.sin_addr), AF_INET))) {
-		closesocket (NewConnectionDesc);
-		printf ("Server: new connection from \'%s\' was immediately closed because of gethostbyaddr() failure.\n", inet_ntoa (RemoteAddress.sin_addr));
+	if (NULL == (HostEntry = gethostbyaddr ((void*)&(remoteAddress.sin_addr),
+		sizeof (remoteAddress.sin_addr), AF_INET))) {
+		closesocket (newConnectionDesc);
+		printf ("Server: new connection from \'%s\' was immediately closed because of gethostbyaddr() failure.\n",
+                inet_ntoa (remoteAddress.sin_addr));
 		return SOCKET_ERROR;
 	}
 
+    /*Siunciame pasveikima naujai prisijungusiam varotojui.*/
+    char greeting[] = "You entered our server, greetings!";
 
-
-	// Itraukiame sukurta soketo deskriptoriu i pagrindine soketu aibe.
-	FD_SET (NewConnectionDesc, MainSet);
-
-
-	// Atitinkamai modifikuojame maksimalaus deskriptoriaus kintamaji.
-	if ((*MaxDesc) < NewConnectionDesc) {
-		(*MaxDesc) = NewConnectionDesc;
+    if (SOCKET_ERROR == sendData(&newConnectionDesc, greeting) ){
+        closesocket (newConnectionDesc);
+        printf ("Server: new connection from \'%s\' was immediately closed because of sendData() failure.\n", 
+                inet_ntoa (remoteAddress.sin_addr));
+        return SOCKET_ERROR;
     }
 
-    strcpy (Buffer, "\n/*****************************************************************************\\\n");
-    strcat (Buffer, " Dear guest from \'");
-    strcat (Buffer, HostEntry->h_name);
-    strcat (Buffer, "\', we welcome you at our Server!\n\n");
-    strcat (Buffer, "\\*****************************************************************************/\n\n");
+    FD_SET(newConnectionDesc, mainSocketSet);
 
-    /*MarshalPacket (Buffer, strlen (Buffer));*/
-
-    /*Pasiunčiame pasveikinimo informaciją naujai prisijungusiajam    */
-    /*if (SOCKET_ERROR == SendAllData (&NewConnectionDesc, Buffer, strlen (Buffer))) {*/
-        /*closesocket (NewConnectionDesc);*/
-        /*printf ("Server: new connection from \'%s\' was immediately closed because of send() failure.\n");*/
-        /*return SOCKET_ERROR;*/
-    /*}*/
-
-    FD_SET(NewConnectionDesc, MainSet);
-
-    if ((*MaxDesc) < NewConnectionDesc) {
-        (*MaxDesc) = NewConnectionDesc;
+    if ((*maxDesc) < newConnectionDesc) {
+        (*maxDesc) = newConnectionDesc;
     }
 
 	return 1;
 }
 
-
-void handleDataFromClient (SOCKET ClientSockDesc, fd_set *MainSet,
-						   fd_set *FirstLevelSet, fd_set *SecondLevelSet) {
-	int BytesOfPacketReceived = 0;	// Gautu vieno paketo baitu skaicius.
-	char *ClientDataBuffers [10];	// Buferis kliento pasiustai informacijai saugoti.
-	int ReceiveResult;				// Duomenu gavimo funkcijos grazinamam rez. saugoti.
-	int PacketsQuantity = 0;		// Duomenu gavimo operacija gautu paketu skaicius.
+// Kliento siunciamu duomenu apdorojimas.
+void handleDataFromClient (SOCKET clientSockDesc, fd_set *mainSocketSet){
+	char *clientDataBuffer;	        // Buferis kliento pasiustai informacijai saugoti.
+	int receiveResult;				// Duomenu gavimo funkcijos grazinamam rez. saugoti.
+	int packetsQuantity = 0;		// Duomenu gavimo operacija gautu paketu skaicius.
 	int iCounter;					// Skaitliukas.
-	char Command [2000] = {0};		// Komandai saugoti.
+	char command [2000] = {0};		// Komandai saugoti.
 
 
 	// Bandome gauti i isskirta buferi kliento pasiusta informacija.
-	/*ReceiveResult = ReceiveAllData (&ClientSockDesc, ClientDataBuffers, &PacketsQuantity);*/
-
+	receiveResult = receiveData(&clientSockDesc, &clientDataBuffer);
+    printf("\nreceive result: %d\n", receiveResult);
 	// Atliekame veiksmus pagal duomenu gavimo funkcijos pranesta rezultata.
 	// jei gautas pranesimas, kad vartotojas nutrauke rysi su serveriu.
-	if (ReceiveResult == 0) {
+	if ( receiveResult == 0 )
+	{
 		// Isvedame pranesima apie prarasta rysi.
-		printf ("Server: client at socket %d has quit the connection.\n", ClientSockDesc);
+		printf ("Server: client at socket %d has quit the connection.\n", clientSockDesc);
 
 		// Naikiname soketa.
-		closesocket (ClientSockDesc);
+		closesocket (clientSockDesc);
 
 		// Pasaliname deskriptoriu is pagrindines aibes.
-		FD_CLR (ClientSockDesc, MainSet);
+		FD_CLR (clientSockDesc, mainSocketSet);
 	}
 
 	// Priesingu atveju, jei ivyko klaida skaitant duomenis.
-	else if (ReceiveResult == SOCKET_ERROR) {
+	else if ( receiveResult == SOCKET_ERROR )
+	{
 		// Isvedame pranesima apie klaida.
-		printf ("Server error: data reception from client was erroneous at socket %d.\n", ClientSockDesc);
-
-		// Dabar reikia surast ir pasalinti informacija
-		// is kazkurio tai lygio dalyviu saraso.
-		/*if (0 == FindAndRemoveClientData (ClientSockDesc, &FirstLevelPlayers)) {*/
-			/*FindAndRemoveClientData (ClientSockDesc, &SecondLevelPlayers);*/
-        /*}*/
+		printf ("Server error: data reception from client was erroneous at socket %d.\n", clientSockDesc);
 
 		// Naikiname soketa.
-		closesocket (ClientSockDesc);
+		closesocket (clientSockDesc);
 
 		// Pasaliname is deskriptoriu aibes.
-		FD_CLR (ClientSockDesc, MainSet);
+		FD_CLR (clientSockDesc, mainSocketSet);
 	}
 
-	// Priesingu atveju, jei viskas baigesi gerai, tai apdorojame
+	// Priesingu atveju, jei viskas gerai, tai apdorojame
 	// kliento uzklausas.
-	else if (ReceiveResult == 1) {
-		// Apdorojame visu paketu isskirta naudinga informacija atskirai.
+	else if ( receiveResult == 1 )
+	{
 
-    }
+            if ( 0 == strcmp (command, "LEAV") ) {
+                closesocket(clientSockDesc);
+            }
+
+			// Atlaisviname atminti.
+			free (clientDataBuffer); 
+	}
 }
-
 

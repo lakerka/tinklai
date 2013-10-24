@@ -2,16 +2,15 @@
 
 int main (void)
 {
-	SOCKET ClientSockDesc;	// Kliento pagrindinio soketo-klausytojo deskriptorius.
-	char UserInput [2000];	// Masyvas vartotojo komandoms nuskaityti.
-	int SendResult;			// Siuntimo funkcijos resultatui saugoti.
-	char *Packets [10];		// Buferiu masyvas duomenims gauti.
-	int Quant = 0;			// Skaitliukas gautiems paketams skaiciuoti.
+	SOCKET clientSockDesc;	// Kliento pagrindinio soketo-klausytojo deskriptorius.
+	char userInput [2000];	// Masyvas vartotojo komandoms nuskaityti.
+	int sendResult;			// Siuntimo funkcijos resultatui saugoti.
+	char *packets [10];		// Buferiu masyvas duomenims gauti.
+	int quant = 0;			// Skaitliukas gautiems paketams skaiciuoti.
 	int iCounter, jCounter;	// Skaitliukai.
-	unsigned int ParseResult;// Komandu analizes rezultatui saugoti.
-	fd_set ReadMask;		// Reikalinga selectui.
+	fd_set readMask;		// Reikalinga selectui.
 	struct timeval TimeVal;	// reikalinga selectui.
-	int Flag;				// Veliavele.
+	int flag;				// Veliavele.
 
 
 //------------------------------------------------------------
@@ -30,7 +29,7 @@ int main (void)
 
 	// Bandome sukurti ir suristi su reikiamu adresu ir portu serverio
 	// pagrindini deskriptoriu, t.y. inicializuojame serveri.
-	if ( INVALID_SOCKET == (ClientSockDesc = initializeClient() ) )
+	if ( INVALID_SOCKET == (clientSockDesc = initializeClient() ) )
 	{
 		printf ("Client error: client initialization failed.\n");
 		goto EXIT;
@@ -39,31 +38,32 @@ int main (void)
 	// Amzinas ciklas, kurio pagalba vartotojas yra rezime 'gyvas'.
 	while ( 1 )
 	{
-        break;
+  
+  break;
 		// Isvalome standartinio I/O buferi.
 		fflush ( stdin );
 
-		// Isvalome UserInput
-		memset (UserInput, 0, sizeof (UserInput));
+		// Isvalome userInput
+		memset (userInput, 0, sizeof (userInput));
 
 		// Uzklausiame vartotojo jo pasirinkimo.
-		fgets (UserInput, sizeof (UserInput), stdin);
-		UserInput [strlen (UserInput) - 1] = '\0';
+		fgets (userInput, sizeof (userInput), stdin);
+		userInput [strlen (userInput) - 1] = '\0';
 
-		if ( 0 == strcmp (UserInput, "") ) continue;
+		if ( 0 == strcmp (userInput, "") ) continue;
 
-
+        printf("user input:%s\n", userInput);
 
 		// Siunciame turima paketa serveriui.
-		/*if ( SOCKET_ERROR == (SendResult = SendAllData (&ClientSockDesc,*/
-			/*UserInput, strlen (UserInput))) )*/
+		/*if ( SOCKET_ERROR == (sendResult = SendAllData (&clientSockDesc,*/
+			/*userInput, strlen (userInput))) )*/
 		/*{*/
 			/*printf ("MathClient error: data transmission to the server failed.\n");*/
 			/*break;*/
 		/*}*/
 
 		// Gauname rezultata.
-		/*if ( SOCKET_ERROR == ReceiveAllData (&ClientSockDesc, Packets, &Quant) )*/
+		/*if ( SOCKET_ERROR == ReceiveAllData (&clientSockDesc, packets, &quant) )*/
 		/*{*/
 			/*printf ("MathClient error: data reception from server failed.\n");*/
 			/*break;*/
@@ -71,10 +71,11 @@ int main (void)
 
 
 	// Uzdarome soketa ir tokiu budu pranesame serveriui apie nutraukta rysi.
+    
     }
-	closesocket (ClientSockDesc);
-
+	closesocket (clientSockDesc);
 EXIT:
+    
 //------------------------------------------------------------
 // Jei kompiliuojama Windows tipo sistemoje, tai reikia
 // baigus darba atlaisvinti soketu biblioteka.

@@ -1,15 +1,12 @@
 #include "common.h"
 
-//paketo formatas: 
-//pirmas baitas nurodo kokio dydzio 
-//naudinga informacija baitais(iki 255)
-//like baitai: naudinga informacija
+    //paketo formatas: 
+    //pirmas baitas nurodo kokio dydzio 
+    //naudinga informacija baitais(iki 255)
+    //like baitai: naudinga informacija
 
-// marshall + send
-/*int sendData ( SOCKET* s, const char* packet);*/
-// receive + unmarshall
-/*int receiveData ( SOCKET* s, char** packet);*/
 
+// eilute nukopijuojanti funkcija
 char* copyString(const char *string) {
     char* stringCopy;
     stringCopy = (char*) malloc(sizeof(string));
@@ -17,7 +14,7 @@ char* copyString(const char *string) {
     return stringCopy;
 }
 
-
+// duomenis issiuncianti nurodytam soketui funkcija
 int sendData ( SOCKET* socket, const char* data) {
     char* dataCopy = copyString(data);  
     int bytesSent = 0;
@@ -28,6 +25,7 @@ int sendData ( SOCKET* socket, const char* data) {
     return bytesSent;
 }
 
+// duomenis nurodytu soketu gaunanti funkcija
 int receiveData ( SOCKET* socket, char** data) {
     if (receivePacket(socket, data) == SOCKET_ERROR) {
         return SOCKET_ERROR;
@@ -35,6 +33,7 @@ int receiveData ( SOCKET* socket, char** data) {
     return unmarshalPacket((*data));
 }
 
+// baita i sveika teigiama skaiciu pavercianti funkcija
 int byteToInteger(char byte) {
     int twoByPower = 1;
     int result = 0;
@@ -49,8 +48,9 @@ int byteToInteger(char byte) {
     return result;
 }
 
-
-// return 1 on success, 0 on failure
+// sveika teigiama skaiciu i baita pavercianti funkcija
+// grazina 1 jeigu sekmingai paversta, 
+// grazina 0 jeigu ivyko klaida 
 int integerToByte(int integer, char *byte) {
     if (integer < 0 || integer > 255) {
         return 0;
@@ -160,8 +160,6 @@ int sendPacket ( SOCKET* socket, const char* packet) {
 // informacija gaunama po viena paketa
 // klientas vienu metu gali siusti viena paketa
 int receivePacket ( SOCKET* socket, char** packet) {
-    
-    /*printf("\nCommon.c: %d\n", packet == NULL);*/
      
     int bytesReceived = 0;        // Jau gautu baitu skaicius.
     int packetSize = 0;           // paketo dydis
@@ -190,9 +188,6 @@ int receivePacket ( SOCKET* socket, char** packet) {
         //ji ir pasiimame
         packetSize = byteToInteger(dataBuffer[0]); 
 
-        /*printf("\nCommon.c: %s\n", dataBuffer);*/
-        /*printf("Common.c paketo dydis: %d\n", packetSize);*/
-        /*printf("Common.c gautu baitu sk: %d\n", bytesReceived);*/
         while( 1 ) { 
 			// Jei turime maziau baitu nei nurodyta paketo dydyje.
             if ( bytesReceived - 1 < packetSize ){
@@ -218,23 +213,18 @@ int receivePacket ( SOCKET* socket, char** packet) {
             //iskirti naudinga informacija ir baigti nuskaityma
             // jeigu meginama siusti daugiau negu viena paketa like baitai ignoruojami
             else if (bytesReceived - 1 >= packetSize) {
-
-				(*packet) = (char*) malloc( packetSize + 1);
+                
                 dataBuffer[packetSize + 1] = '\0';
+                // nukopijuojame gauta paketa
+                (*packet) = (char*) malloc( packetSize + 1);
                 memset ((*packet), 0, packetSize + 2);
-                /*printf("\nCommon.c paketas po reset: %s\n", packet);*/
                 strcpy ((*packet), dataBuffer);
-                /*printf("\nCommon.c paketas po copy: %s\n", (*packet));*/
 				break;
             }
 
         }
 
     }
-    
-    /*printf("\nCommon.c: %s\n", dataBuffer);*/
-    /*printf("\nCommon.c: %d\n", packetSize);*/
-    /*printf("\nCommon.c: %s\n", packet);*/
     
     return 1;
 
