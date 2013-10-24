@@ -5,6 +5,36 @@
 //naudinga informacija baitais(iki 255)
 //like baitai: naudinga informacija
 
+// marshall + send
+/*int sendData ( SOCKET* s, const char* packet);*/
+// receive + unmarshall
+/*int receiveData ( SOCKET* s, char** packet);*/
+
+char* copyString(const char *string) {
+    char* stringCopy;
+    stringCopy = (char*) malloc(sizeof(string));
+    strcpy(stringCopy, string);
+    return stringCopy;
+}
+
+
+int sendData ( SOCKET* socket, const char* data) {
+    char* dataCopy = copyString(data);  
+    int bytesSent = 0;
+    if ( marshalPacket(dataCopy) == SOCKET_ERROR ) {
+        return SOCKET_ERROR;
+    }
+    bytesSent = sendPacket(socket, dataCopy);
+    return bytesSent;
+}
+
+int receiveData ( SOCKET* socket, char** data) {
+    if (receivePacket(socket, data) == SOCKET_ERROR) {
+        return SOCKET_ERROR;
+    }
+    return unmarshalPacket((*data));
+}
+
 int byteToInteger(char byte) {
     int twoByPower = 1;
     int result = 0;
@@ -52,7 +82,7 @@ int marshalPacket (char *packet) {
     // informacijos kiekis didesnis negu
     // 255 baitai
     if ( conversionSucces == 0) {
-        return 0;
+        return SOCKET_ERROR;
     }
     // naudingu duomenu dydi zymi pirmas paketo baitas
     marshaledData[0] = dataSizeByte;
@@ -74,9 +104,9 @@ int marshalPacket (char *packet) {
 // Paketo ispakavimas.
 int unmarshalPacket (char *packet) {
     char unmarshaledData [500] = {0}; // Buferis, skirtas saugoti realius duomenis isskirtus is paketo.
-    int iCounter = 0;                  // Skaitliukas.
-    int usefullDataSize = 0;            // naudingo informacijos kiekis baitais
-    int dataSize = 0;                  // Persiustu duomenu dydis, kuris bus grazintas.
+    int iCounter = 0;                 // Skaitliukas.
+    int usefullDataSize = 0;          // naudingo informacijos kiekis baitais
+    int dataSize = 0;                 // Persiustu duomenu dydis, kuris bus grazintas.
     
     // nuskaitom duomenu dydi apibudinancia eilute
     dataSize = byteToInteger(packet[0]);
@@ -85,7 +115,7 @@ int unmarshalPacket (char *packet) {
     // reiskias gavome formato neatitinkanti paketa
     // galime ji ismesti
     if (strlen(packet) - 1 != dataSize) {
-        return 0;
+        return SOCKET_ERROR;
     }
 
     // kopijuojame naudingus duomenis
@@ -101,17 +131,22 @@ int unmarshalPacket (char *packet) {
 }
 
 //paketo siuntimas
-int sendPacket ( SOCKET* socket, const char* packet, int maxBufferSize) {
-    int sentBytes = 0;             // Jau issiustu baitu skaicius.
-    int bytesLeft = maxBufferSize; // Kiek baitu dar liko issiusti.
-    int currSentBytesCount;                    // Per viena karta issiunciamu baitu sk.
-    
-    while( sentBytes < maxBufferSize ) {
+int sendPacket ( SOCKET* socket, const char* packet) {
+    int sentBytes = 0;              // Jau issiustu baitu skaicius.
+
+    int bytesLeft = strlen(packet); // Kiek baitu dar liko issiusti.
+    int currSentBytesCount;         // Per viena karta issiunciamu baitu sk.
+
+    /*printf("Common.c: %s\n", packet);*/
+    while( bytesLeft > 0 ) {
+
         /*int send (<The socket descriptor to use to send the data> ,
                      <A pointer to the buffer to send> ,
                      <The length of the buffer to send> ,
                      <flags>)*/
         currSentBytesCount = send ((*socket), packet + sentBytes, bytesLeft, 0);
+
+        /*printf("Common.c: %d\n", bytesLeft);*/
         if ( currSentBytesCount == SOCKET_ERROR ) {
             return SOCKET_ERROR;
         }
@@ -124,11 +159,12 @@ int sendPacket ( SOCKET* socket, const char* packet, int maxBufferSize) {
 
 // informacija gaunama po viena paketa
 // klientas vienu metu gali siusti viena paketa
-int receivePacket ( SOCKET* socket, char* packet) {
+int receivePacket ( SOCKET* socket, char** packet) {
     
-    
+    /*printf("\nCommon.c: %d\n", packet == NULL);*/
+     
     int bytesReceived = 0;        // Jau gautu baitu skaicius.
-    int packetSize = 0;      // paketo dydis         
+    int packetSize = 0;           // paketo dydis
 
     int currRecvByteCount;        // Per viena karta gautu baitu sk.
     char dataBuffer [2000] = {0}; // Duomenu buferis
@@ -154,6 +190,9 @@ int receivePacket ( SOCKET* socket, char* packet) {
         //ji ir pasiimame
         packetSize = byteToInteger(dataBuffer[0]); 
 
+        /*printf("\nCommon.c: %s\n", dataBuffer);*/
+        /*printf("Common.c paketo dydis: %d\n", packetSize);*/
+        /*printf("Common.c gautu baitu sk: %d\n", bytesReceived);*/
         while( 1 ) { 
 			// Jei turime maziau baitu nei nurodyta paketo dydyje.
             if ( bytesReceived - 1 < packetSize ){
@@ -180,16 +219,23 @@ int receivePacket ( SOCKET* socket, char* packet) {
             // jeigu meginama siusti daugiau negu viena paketa like baitai ignoruojami
             else if (bytesReceived - 1 >= packetSize) {
 
+				(*packet) = (char*) malloc( packetSize + 1);
                 dataBuffer[packetSize + 1] = '\0';
+                memset ((*packet), 0, packetSize + 2);
+                /*printf("\nCommon.c paketas po reset: %s\n", packet);*/
+                strcpy ((*packet), dataBuffer);
+                /*printf("\nCommon.c paketas po copy: %s\n", (*packet));*/
 				break;
             }
+
         }
 
     }
-
-    memset (packet, 0, packetSize + 2);
-    strcpy (packet, dataBuffer);
-
+    
+    /*printf("\nCommon.c: %s\n", dataBuffer);*/
+    /*printf("\nCommon.c: %d\n", packetSize);*/
+    /*printf("\nCommon.c: %s\n", packet);*/
+    
     return 1;
 
 }

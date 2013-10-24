@@ -36,11 +36,15 @@
 
 // Funkciju, skirtu siunciamu duomenu paketu
 // sudejimui ir isskaidymui, antrastes.
-int marshalPacket ( char* Packet );
-int unmarshalPacket ( char* Packet );
+int marshalPacket ( char* packet );
+int unmarshalPacket ( char* packet );
 
 // Funkciju, skirtu duomenu paketams issiusti
 // ir gauti, antrastes.
-int sendPacket ( SOCKET* s, const char* Packet, int MaxBufferSize);
-int receivePacket ( SOCKET* s, char* Packet);
+int sendPacket ( SOCKET* socket, const char* packet);
+int receivePacket ( SOCKET* socket, char** packet);
 
+// marshall + send
+int sendData ( SOCKET* socket, const char* packet);
+// receive + unmarshall
+int receiveData ( SOCKET* socket, char** packet);

@@ -1,5 +1,5 @@
 #include "server.h"
-/*#include "common.h"*/
+
 int main(void) {
     /*char paketas[] = "X";*/
     /*paketas[1] = 'O';*/
@@ -14,9 +14,9 @@ int main(void) {
     /*printf("%lu", sizeof(int));*/
     /*char eil[] = {"15:mano"};*/
     /*UnmarshalPacket(eil);*/
-    SOCKET ServSockDesc;
-    fd_set MainSocketSet, TempSet;
-    unsigned int MaxKnownSocketDesc, iCounter;
+    SOCKET servSockDesc;
+    fd_set mainSocketSet, tempSet;
+    unsigned int maxKnowSocketDesc, iCounter;
     struct timeval TimeVal; // Laiko struktura dirbti su select().
 
 #ifdef WIN32OS
@@ -26,15 +26,15 @@ int main(void) {
 
  
     // Isvalo soketu aibes, kad jos neturetu jokiu siuksliu.
-    FD_ZERO(&MainSocketSet);
-    FD_ZERO(&TempSet);
+    FD_ZERO(&mainSocketSet);
+    FD_ZERO(&tempSet);
 
     // Inicializuojame laiko struktura. 0 - reiskia, kad select() funkcija turi blokuotis laukdama, kol atsiras bent vienas aktyvus soketas.
     TimeVal.tv_sec = 0;
     TimeVal.tv_usec = 0;
 
     // Inicializuokime serverio funkcini moduli.
-    if (INVALID_SOCKET == (ServSockDesc = InitializeServer())) {
+    if (INVALID_SOCKET == (servSockDesc = initializeServer())) {
         exit(EXIT_FAILURE);
     }
 
@@ -42,16 +42,16 @@ int main(void) {
     // ir pazymeti klausantiji soketa kaip maksimalu 
     // programai zinoma soketo deskriptoriu.
 
-    FD_SET(ServSockDesc, &MainSocketSet); // ideda socketo deskript i aibe
-    MaxKnownSocketDesc = ServSockDesc;
+    FD_SET(servSockDesc, &mainSocketSet); // ideda socketo deskript i aibe
+    maxKnowSocketDesc = servSockDesc;
     // Pagrindinis amzinas ciklas, kuris palaiko serveri rezimu "gyvas".
 
     while (1){
 
         // Kiekvienoje iteracijoje inicializuokime pagalbine soketu aibe pagrindine.
-        TempSet = MainSocketSet;
+        tempSet = mainSocketSet;
        
-        if (SOCKET_ERROR == select (MaxKnownSocketDesc + 1, &TempSet, NULL, NULL, &TimeVal)) {
+        if (SOCKET_ERROR == select (maxKnowSocketDesc + 1, &tempSet, NULL, NULL, &TimeVal)) {
             exit(EXIT_FAILURE);
         }
 
@@ -63,22 +63,26 @@ int main(void) {
          * kliento soketas(klientas siuncia duomenis).*/
         
         // Nuskanuoti galimu deskriptoriu erdve iki turimo maksimalaus.
-        for (iCounter = 0; iCounter <= MaxKnownSocketDesc; iCounter++) {
+        for (iCounter = 0; iCounter <= maxKnowSocketDesc; iCounter++) {
 
             // Tikriname su kiekviena skaitliuko reiksme, 
             // ar jo aprasomas soketas nepriklauso pagrindinei soketu aibei.
-            if (FD_ISSET (iCounter, &TempSet)) {
+            if (FD_ISSET (iCounter, &tempSet)) {
                 // Jei tos skaitliuko reiksmes aprasomas 
-                // soketas yra 'ServSockDesc', t.y. nauju 
+                // soketas yra 'servSockDesc', t.y. nauju 
                 // prisijungimu laukiantis, tai reikia apdoroti 
                 // naujo kliento prisijungima.
 
-                if (iCounter == ServSockDesc) {
+                if (iCounter == servSockDesc) {
                     // Apdorojame nauja prisijungima.
 
-                    if (SOCKET_ERROR == HandleNewConnection (&ServSockDesc, &MaxKnownSocketDesc, &MainSocketSet)) {
+                    if (SOCKET_ERROR == handleNewConnection (&servSockDesc, &maxKnowSocketDesc, &mainSocketSet)) {
                         printf ("Server error: acceptance of new connection was erroneous.\n");
                     }
+
+                    printf("\nSiunciame pasveikima naujai prisijungusiam varotojui.\n");
+                    char greeting[] = "Sveiki prisijunge prie musu serverio!";
+                    sendData(&maxKnowSocketDesc, greeting);
                 }
                 else {
                     // Jei tai ne nauju prisijungimu laukiancio soketo 
@@ -87,7 +91,7 @@ int main(void) {
                     // Reikia ja priimti ir atitinkamai apdoroti.
                     //
                     // Priimame ir apdorojame pranesima.
-                    /*HandleDataFromClient ((SOCKET)iCounter, &MainSocketSet);*/
+                    /*HandleDataFromClient ((SOCKET)iCounter, &mainSocketSet);*/
                 }
             }
         }
@@ -102,7 +106,6 @@ int main(void) {
         return 1;
 
 }
-
 
 
 

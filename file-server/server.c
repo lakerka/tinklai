@@ -1,10 +1,10 @@
 #include "server.h"
 
-SOCKET InitializeServer (void) {
+SOCKET initializeServer (void) {
 
-    SOCKET ServerSockDesc;                     //  Serverio soketo deskriptorius.
+    SOCKET serverSockDesc;                     //  Serverio soketo deskriptorius.
     char cServerHostName [256] = {0};          //  Hosto, kuriame serveris paleistas, vardas.
-    struct sockaddr_in ServerAddress;          //  Serverio adreso struktura.
+    struct sockaddr_in serverAddress;          //  Serverio adreso struktura.
     /*struct sockaddr_in{*/
       /*short sin_family        ; Address family  in byte 1 ; must be AF_INET. */
       /*unsigned short sin_port ; Internet Protocol (IP) port. 16 bit value found in byte 2 and 3 */
@@ -40,14 +40,14 @@ SOCKET InitializeServer (void) {
     }
 
     // Inicializuojame soketo adreso struktura.
-    ServerAddress.sin_family = AF_INET; //AF_INET = 2, ipv4 
-    ServerAddress.sin_port = htons(SERVER_PORT); // priskiriamas portas
-    ServerAddress.sin_addr = *(struct in_addr*)ptrServerHostEntry->h_addr; // priskiriamas IP adresas
-    memset(&(ServerAddress.sin_zero), 0, 8); 
+    serverAddress.sin_family = AF_INET; //AF_INET = 2, ipv4 
+    serverAddress.sin_port = htons(SERVER_PORT); // priskiriamas portas
+    serverAddress.sin_addr = *(struct in_addr*)ptrServerHostEntry->h_addr; // priskiriamas IP adresas
+    memset(&(serverAddress.sin_zero), 0, 8); 
 
     // Sukuriame pati soketo deskriptoriu.
     // socket(address family, type, protocol to be used)
-    if (INVALID_SOCKET == (ServerSockDesc = socket (AF_INET, SOCK_STREAM, 0))) {
+    if (INVALID_SOCKET == (serverSockDesc = socket (AF_INET, SOCK_STREAM, 0))) {
         return INVALID_SOCKET;
     }
     /*
@@ -59,7 +59,7 @@ SOCKET InitializeServer (void) {
      */
 
     // Uzdedame opcija soketo adreso ir porto pakartotinam panaudojimui.
-    if (SOCKET_ERROR == setsockopt(ServerSockDesc , SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)))
+    if (SOCKET_ERROR == setsockopt(serverSockDesc , SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)))
         return INVALID_SOCKET;
 
     /* bind(soketo deskriptorius                   , */
@@ -67,15 +67,15 @@ SOCKET InitializeServer (void) {
     /* adreso ilgis baitais)                         */
 
     // Surisame sukurta deskriptoriu su turimu adresu.
-    if (SOCKET_ERROR == bind (ServerSockDesc, (struct sockaddr*)&ServerAddress, sizeof(ServerAddress))) {
-        closesocket(ServerSockDesc);
+    if (SOCKET_ERROR == bind (serverSockDesc, (struct sockaddr*)&serverAddress, sizeof(serverAddress))) {
+        closesocket(serverSockDesc);
         return INVALID_SOCKET;
     }
 
     // Liepiame sukurtam soketui laukti prisijungimu per porta,
     // su kuriuo jis suristas.
-    if (SOCKET_ERROR == listen(ServerSockDesc, MAX_QUEUE_LENGTH)){
-        closesocket(ServerSockDesc);
+    if (SOCKET_ERROR == listen(serverSockDesc, MAX_QUEUE_LENGTH)){
+        closesocket(serverSockDesc);
         return INVALID_SOCKET;
     }
 
@@ -83,12 +83,12 @@ SOCKET InitializeServer (void) {
     printf ("File server: started successfully on host \'%s\' - (%s).\n", cServerHostName, inet_ntoa(*(struct in_addr*)ptrServerHostEntry->h_addr));
 
     // Graziname sukurto soketo deskriptoriu.
-    return ServerSockDesc;
+    return serverSockDesc;
 }
 
 
 // Nauju prisijungimu apdorojimas.
-int HandleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *MainSet) {
+int handleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *MainSet) {
 	struct sockaddr_in RemoteAddress;	// Struktura bandancio prisijungti adresui.
 	SOCKET NewConnectionDesc;			// Soketo deskriptorius bendravimui su nauju klientu.
 	int AddressSize;					// Adreso strukturos dydziui saugoti.
@@ -169,7 +169,7 @@ int HandleNewConnection (SOCKET *ServSockDesc, unsigned int *MaxDesc, fd_set *Ma
 }
 
 
-void HandleDataFromClient (SOCKET ClientSockDesc, fd_set *MainSet,
+void handleDataFromClient (SOCKET ClientSockDesc, fd_set *MainSet,
 						   fd_set *FirstLevelSet, fd_set *SecondLevelSet) {
 	int BytesOfPacketReceived = 0;	// Gautu vieno paketo baitu skaicius.
 	char *ClientDataBuffers [10];	// Buferis kliento pasiustai informacijai saugoti.

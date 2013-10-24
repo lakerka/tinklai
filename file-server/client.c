@@ -14,7 +14,7 @@ SOCKET initializeClient ( void )
 #else
 	const int yes = 1;
 #endif
-	char* packet [1];							// Bufferis pasveikinimo duomenims laikyti.
+	char* packet;							// Bufferis pasveikinimo duomenims laikyti.
 	int dummyPackQ = 0;							// Gautu paketu skaiciaus kintamasis.
 
 
@@ -73,16 +73,14 @@ SOCKET initializeClient ( void )
 	printf ("Client: connected successfully to host \'%s\' - (%s).\n",
 		serverHostName, inet_ntoa (*(struct in_addr *)ptrServerHostEntry->h_addr) );
 
-
-	// Gauname serverio pasveikinima.
-	if ( SOCKET_ERROR == receivePacket (&clientSockDesc, *packet) ) {
-		closesocket (clientSockDesc);
-		return INVALID_SOCKET;
-	}
-
+     /*Gauname serverio pasveikinima.*/
+    if ( SOCKET_ERROR == receiveData(&clientSockDesc, &packet) ) {
+        closesocket (clientSockDesc);
+        return INVALID_SOCKET;
+    }
 	// Atspauzdiname serverio pasveikinima:
-	printf ("%s", packet [0]);
-	free (packet [0]);
+	printf ("Gautas pasveikinimas: %s\n", packet);
+    free (packet);
 
 	// Graziname sukurto soketo deskriptoriu.
 	return clientSockDesc;
