@@ -8,3 +8,5 @@
 // Funkcijos, skirtos klientines aplikacijos
 // inicializacijai, antraste.
 SOCKET initializeClient ( void );
+int parseCommand(char* userInput);
+

@@ -8,14 +8,18 @@
 
 // eilute nukopijuojanti funkcija
 char* copyString(const char *string) {
-    char* stringCopy;
-    stringCopy = (char*) malloc(sizeof(string));
+    char *stringCopy;
+    stringCopy = (char*) malloc(strlen(string) + 1);
     strcpy(stringCopy, string);
     return stringCopy;
 }
 
 // duomenis issiuncianti nurodytam soketui funkcija
 int sendData ( SOCKET* socket, const char* data) {
+    if (data == NULL) {
+        printf("Common error: empty data provided for sending!\n");
+        return 0;
+    }
     char* dataCopy = copyString(data);  
     int bytesSent = 0;
     if ( marshalPacket(dataCopy) == SOCKET_ERROR ) {
@@ -27,8 +31,9 @@ int sendData ( SOCKET* socket, const char* data) {
 
 // duomenis nurodytu soketu gaunanti funkcija
 int receiveData ( SOCKET* socket, char** data) {
-    if (receivePacket(socket, data) == SOCKET_ERROR) {
-        return SOCKET_ERROR;
+    int bytesReceived = receivePacket(socket, data); 
+    if (bytesReceived <= 0) {
+        return bytesReceived;
     }
     return unmarshalPacket((*data));
 }
@@ -72,7 +77,7 @@ int integerToByte(int integer, char *byte) {
 // Paketo supakavimas
 int marshalPacket (char *packet) {
     int dataSize = strlen(packet);  // Siunciamu duomenu dydis - simboliu kiekis.
-    char marshaledData [500] = {0}; // Buferis, skirtas saugoti duomenu paketui.
+    char marshaledData [1000] = {0}; // Buferis, skirtas saugoti duomenu paketui.
     char dataSizeByte;              // baitas apibudinantis naudingo info kieki
     int iCounter;                   // Skaitliukas.
     
@@ -103,11 +108,15 @@ int marshalPacket (char *packet) {
 
 // Paketo ispakavimas.
 int unmarshalPacket (char *packet) {
-    char unmarshaledData [500] = {0}; // Buferis, skirtas saugoti realius duomenis isskirtus is paketo.
+    char unmarshaledData [1000] = {0}; // Buferis, skirtas saugoti realius duomenis isskirtus is paketo.
     int iCounter = 0;                 // Skaitliukas.
     int usefullDataSize = 0;          // naudingo informacijos kiekis baitais
     int dataSize = 0;                 // Persiustu duomenu dydis, kuris bus grazintas.
-    
+
+    if (strlen(packet) == 0) {
+        return SOCKET_ERROR;
+    }
+
     // nuskaitom duomenu dydi apibudinancia eilute
     dataSize = byteToInteger(packet[0]);
 
@@ -137,7 +146,6 @@ int sendPacket ( SOCKET* socket, const char* packet) {
     int bytesLeft = strlen(packet); // Kiek baitu dar liko issiusti.
     int currSentBytesCount;         // Per viena karta issiunciamu baitu sk.
 
-    /*printf("Common.c: %s\n", packet);*/
     while( bytesLeft > 0 ) {
 
         /*int send (<The socket descriptor to use to send the data> ,
@@ -146,7 +154,6 @@ int sendPacket ( SOCKET* socket, const char* packet) {
                      <flags>)*/
         currSentBytesCount = send ((*socket), packet + sentBytes, bytesLeft, 0);
 
-        /*printf("Common.c: %d\n", bytesLeft);*/
         if ( currSentBytesCount == SOCKET_ERROR ) {
             return SOCKET_ERROR;
         }
@@ -165,11 +172,12 @@ int receivePacket ( SOCKET* socket, char** packet) {
     int packetSize = 0;           // paketo dydis
 
     int currRecvByteCount;        // Per viena karta gautu baitu sk.
-    char dataBuffer [2000] = {0}; // Duomenu buferis
+    char dataBuffer [1000] = {0}; // Duomenu buferis
     
     // testi, padaryti normalu paketo gavima
     currRecvByteCount = recv ((*socket), dataBuffer, sizeof (dataBuffer), 0);
 
+    /*printf("Gautu baitu sk: %d\n", currRecvByteCount);*/
     bytesReceived += currRecvByteCount;
     
     //nieko negavome, reiskias vartotojas nutrauke rysi
@@ -213,11 +221,11 @@ int receivePacket ( SOCKET* socket, char** packet) {
             //iskirti naudinga informacija ir baigti nuskaityma
             // jeigu meginama siusti daugiau negu viena paketa like baitai ignoruojami
             else if (bytesReceived - 1 >= packetSize) {
-                
+
                 dataBuffer[packetSize + 1] = '\0';
                 // nukopijuojame gauta paketa
-                (*packet) = (char*) malloc( packetSize + 1);
-                memset ((*packet), 0, packetSize + 2);
+                (*packet) = (char*) malloc(sizeof(dataBuffer));
+                memset ((*packet), 0, sizeof(dataBuffer));
                 strcpy ((*packet), dataBuffer);
 				break;
             }

@@ -1,6 +1,11 @@
 #include "server.h"
 
+
+char fileDescriptions[1000][100];
+int fileCount = 0;
+
 SOCKET initializeServer (void) {
+
 
     SOCKET serverSockDesc;                     //  Serverio soketo deskriptorius.
     char cServerHostName [256] = {0};          //  Hosto, kuriame serveris paleistas, vardas.
@@ -92,14 +97,13 @@ int handleNewConnection (SOCKET *servSockDesc, unsigned int *maxDesc, fd_set *ma
 	struct sockaddr_in remoteAddress;	// Struktura bandancio prisijungti adresui.
 	SOCKET newConnectionDesc;			// Soketo deskriptorius bendravimui su nauju klientu.
 	int addressSize;					// Adreso strukturos dydziui saugoti.
-	char buffer [1000] = {0};			// Buferis pasveikinimo informacijai laikyti.
-	struct hostent *HostEntry;			// Struktura informacijai apie nauja klienta.
+	char buffer [2000] = {0};			// Buferis pasveikinimo informacijai laikyti.
+	struct hostent *hostEntry;			// Struktura informacijai apie nauja klienta.
 #ifdef WIN32OS
 	const char yes = '1';
 #else
 	const int yes = 1;
 #endif
-
 
 	//Inicializuojame adreso strukturos dydzio kintamaji.
 	addressSize = sizeof (struct sockaddr_in);
@@ -124,10 +128,10 @@ int handleNewConnection (SOCKET *servSockDesc, unsigned int *maxDesc, fd_set *ma
 	printf ("Server: new connection from \'%s\' accepted successfully.\n",
 		inet_ntoa (remoteAddress.sin_addr));
 
-
 	// Gauname informacija apie prisijungusi klienta.
-	if (NULL == (HostEntry = gethostbyaddr ((void*)&(remoteAddress.sin_addr),
-		sizeof (remoteAddress.sin_addr), AF_INET))) {
+    if (NULL == (hostEntry = gethostbyaddr ((void*)&(remoteAddress.sin_addr),
+        sizeof (remoteAddress.sin_addr), AF_INET))) {
+
 		closesocket (newConnectionDesc);
 		printf ("Server: new connection from \'%s\' was immediately closed because of gethostbyaddr() failure.\n",
                 inet_ntoa (remoteAddress.sin_addr));
@@ -153,21 +157,29 @@ int handleNewConnection (SOCKET *servSockDesc, unsigned int *maxDesc, fd_set *ma
 	return 1;
 }
 
+int isQuit(char* command);
+int isIsFile(char* userInput, char* paramsBuffer);
+
+
 // Kliento siunciamu duomenu apdorojimas.
 void handleDataFromClient (SOCKET clientSockDesc, fd_set *mainSocketSet){
 	char *clientDataBuffer;	        // Buferis kliento pasiustai informacijai saugoti.
-	int receiveResult;				// Duomenu gavimo funkcijos grazinamam rez. saugoti.
+	int bytesReceived;				// Duomenu gavimo funkcijos grazinamam rez. saugoti.
 	int packetsQuantity = 0;		// Duomenu gavimo operacija gautu paketu skaicius.
 	int iCounter;					// Skaitliukas.
 	char command [2000] = {0};		// Komandai saugoti.
 
 
 	// Bandome gauti i isskirta buferi kliento pasiusta informacija.
-	receiveResult = receiveData(&clientSockDesc, &clientDataBuffer);
-    printf("\nreceive result: %d\n", receiveResult);
+
+	bytesReceived = receiveData(&clientSockDesc, &clientDataBuffer);
+    
+    /*printf("%s\n", clientDataBuffer);*/
+    /*printf("Receive result: %d\n", receiveResult);*/
+    //
 	// Atliekame veiksmus pagal duomenu gavimo funkcijos pranesta rezultata.
 	// jei gautas pranesimas, kad vartotojas nutrauke rysi su serveriu.
-	if ( receiveResult == 0 )
+	if ( bytesReceived == 0 )
 	{
 		// Isvedame pranesima apie prarasta rysi.
 		printf ("Server: client at socket %d has quit the connection.\n", clientSockDesc);
@@ -180,13 +192,14 @@ void handleDataFromClient (SOCKET clientSockDesc, fd_set *mainSocketSet){
 	}
 
 	// Priesingu atveju, jei ivyko klaida skaitant duomenis.
-	else if ( receiveResult == SOCKET_ERROR )
+	else if ( bytesReceived == SOCKET_ERROR 
+            || clientDataBuffer == NULL)
 	{
 		// Isvedame pranesima apie klaida.
 		printf ("Server error: data reception from client was erroneous at socket %d.\n", clientSockDesc);
 
 		// Naikiname soketa.
-		closesocket (clientSockDesc);
+        closesocket (clientSockDesc);
 
 		// Pasaliname is deskriptoriu aibes.
 		FD_CLR (clientSockDesc, mainSocketSet);
@@ -194,15 +207,171 @@ void handleDataFromClient (SOCKET clientSockDesc, fd_set *mainSocketSet){
 
 	// Priesingu atveju, jei viskas gerai, tai apdorojame
 	// kliento uzklausas.
-	else if ( receiveResult == 1 )
-	{
-
-            if ( 0 == strcmp (command, "LEAV") ) {
+	else if ( bytesReceived >=  1 ) {
+            
+            // komanda quit
+            if ( isQuit(clientDataBuffer) == 1 ) {
                 closesocket(clientSockDesc);
             }
+            else {
 
-			// Atlaisviname atminti.
-			free (clientDataBuffer); 
+                int clientDataBufferSize = strlen(clientDataBuffer) + 1;
+                char *params = (char*) malloc(clientDataBufferSize);
+                // susizinome parsinimo resultata
+                int outcome = isIsFile(clientDataBuffer, params); 
+
+                // jeigu sutampa su isFile komandos
+                // formatu
+                if ( outcome == 1 ) {
+
+                    /*printf("%s\n", params);    */
+                    //patikriname ar failas yra serveryje
+                    int fileExist = isFileDescription(params);
+                    
+                    char exist[2];
+                    if ( fileExist ) {
+
+                        exist[0] = '1';
+                    }else {
+
+                        exist[0] = '0';
+                    }
+                    exist[1] = '\0';
+                    
+                    int responceSendingSucces = sendData(&clientSockDesc,  exist);
+                    if ( responceSendingSucces == SOCKET_ERROR ) {
+                        printf("Server error. Failed to responde to client with socket descriptor %d.\n", clientSockDesc);
+                    }
+
+                }else if ( outcome == -1 ) {
+                    
+                    printf("Client with socket descriptor %d error. Invalid isfile command format.\n", clientSockDesc);
+                }
+                free(params);
+            }
+			
+            // Atlaisviname atminti.
+            free (clientDataBuffer); 
 	}
 }
 
+
+
+int isQuit(char* userInput) {
+    if ( strcmp (userInput, "quit") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int isIsFile(char* userInput, char* paramsBuffer) {
+    char command[] = {"isfile"};
+    int commandLen = strlen(command);
+    int userInputLen = strlen(userInput);
+    // atsiustos komandos ilgs turi buti
+    // tikrai ne trumpenis nei isfile eilutes ilgis
+    if (userInputLen >= commandLen) {
+        int userInputMatchCommand = 1;
+        int j;
+        for (j = 0; j < commandLen; j++) {
+            if ( userInput[j] != command[j] ) {
+                userInputMatchCommand = 0;
+            } 
+        }
+        if ( userInputMatchCommand == 1 ) {
+            // po komandos turi sekti vienas tarpas
+            // ir failo kelias su failo vardu
+            // tad po komandos turi buti bent dar 2 simboliai
+            if ( userInputLen >= commandLen + 2  
+                  && userInput[commandLen] == ' '
+                  && userInput[commandLen + 1] != ' ' ) {
+                     // buferis skirtas saugoti
+                     // komandos parametrams
+
+                    /*nuimame comandos pavadinima*/
+                    /*ir paliekame tik parametrus*/
+                    int i;
+                    for (i = commandLen + 1; i < userInputLen 
+                            && userInput[i] != ' '; i++) {
+                        paramsBuffer[i - (commandLen + 1)] = userInput[i];
+                    }
+                     /*jeigu paskutinis simbolis nebuvo tarpas reikia*/
+                     /*pastumeti simboliu skaitliuka, kad po visu*/
+                     /*simboliu padetume eil. pab. simb.*/
+                    paramsBuffer[i] = '\0';
+
+                    return 1;
+
+            }else {
+
+                // neteisingas komandos formatas
+                // pranesame apie klaida
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+int addFileDescription(char* fileDescription) {
+    
+    if ( fileDescription == NULL ) {
+        return 0;
+    }
+    
+    if ( strlen(fileDescription) + 1 > 100 ) {
+        printf("Server error: file description too large\n");
+        return 0;
+    }
+    
+    int i;
+    for (i = 0; i < strlen(fileDescription); i++) {
+        fileDescriptions[fileCount][i] = fileDescription[i]; 
+    }
+    fileDescriptions[fileCount][i] = '\0';
+    
+    fileCount++;
+
+    return 1;
+}
+
+int isFileDescription(char* fileDescription) {
+
+    if ( fileDescription == NULL ) {
+        return 0;
+    }
+    
+    if ( strlen(fileDescription) + 1 > 100 ) {
+        printf("Server error: file description too large\n");
+        return 0;
+    }
+    
+    int i, j;
+    int existingDescLen;
+    int descToCheckLen = strlen(fileDescription);
+
+    for (j = 0; j < fileCount; j++) {
+
+        existingDescLen = strlen(fileDescriptions[j]);
+        // jeigu ilgiai nesutampa tai tuo
+        // paciu nesutaps ir eilutes
+        if ( existingDescLen != descToCheckLen ) {
+            continue;
+        }
+
+        int descriptionsMatch = 1;
+        for (i = 0; i < existingDescLen; i++) {
+           // jeigu faila apibudiancios eilutes
+           // nesutampa reiskias
+           // tokio failo serveryje nera  
+           if ( fileDescriptions[j][i] != fileDescription[i] ) {
+
+               descriptionsMatch = 0;
+           }
+        }
+        if ( descriptionsMatch == 1 ) {
+            return 1;
+        }
+    }
+    return 0;
+}

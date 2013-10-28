@@ -43,4 +43,5 @@ SOCKET initializeServer ( void );
 
 int handleNewConnection ( SOCKET*, unsigned int*, fd_set* );
 void handleDataFromClient ( SOCKET, fd_set*);
-
+int addFileDescription(char* fileDescription);
+int isFileDescription(char* fileDescription);

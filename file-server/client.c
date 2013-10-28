@@ -57,6 +57,7 @@ SOCKET initializeClient ( void )
 	// Uzdedame opcija soketo adreso ir porto pakartotinam panaudojimui.
 	if ( SOCKET_ERROR == setsockopt (clientSockDesc,
 		SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (yes)) ) {
+
 		return INVALID_SOCKET;
     }
 
@@ -64,6 +65,7 @@ SOCKET initializeClient ( void )
 	// Bandome prisijungti prie serverio.
 	if ( SOCKET_ERROR == connect (clientSockDesc,
 		(struct sockaddr *)&serverAddress, sizeof (struct sockaddr)) ) {
+
 		closesocket (clientSockDesc);
 		return INVALID_SOCKET;
 	}
@@ -75,14 +77,69 @@ SOCKET initializeClient ( void )
 
      /*Gauname serverio pasveikinima.*/
     if ( SOCKET_ERROR == receiveData(&clientSockDesc, &packet) ) {
+        
         closesocket (clientSockDesc);
         return INVALID_SOCKET;
     }
 	// Atspauzdiname serverio pasveikinima:
-	printf ("Gautas pasveikinimas: %s\n", packet);
+	printf ("Server message received: %s\n", packet);
     free (packet);
 
 	// Graziname sukurto soketo deskriptoriu.
 	return clientSockDesc;
 }
 
+// 0 - klaida arba neatpazinta komanda
+// 1 - komanda quit
+// 2 - komanda isfile[tarpas][failo vardas su keliu]
+int parseCommand(char* userInput) {
+    int commandCompareResult = strcmp(userInput, "quit");
+    if ( commandCompareResult == 0 ) {
+        return 1;
+    }
+    // jeigu tai ne komanda quit
+    char command[] = {"isfile"};
+    int commandLen = strlen(command);
+    int userInputLen = strlen(userInput);
+    if (userInputLen >= commandLen) {
+        // jeigu eiluciu pradzios sutampa reiskias
+        // radome komanda kuria naudotojas nori iskviesti
+        int userInputMatchCommand = 1;
+        int j;
+        for (j = 0; j < commandLen; j++) {
+            if ( userInput[j] != command[j] ) {
+                userInputMatchCommand = 0;
+            } 
+        }
+        if ( userInputMatchCommand == 1 ) {
+            
+            // po komandos turi sekti vienas tarpas
+            // ir failo kelias su failo vardu
+            // tad po komandos turi buti bent dar 2 simboliai
+
+            if ( userInputLen >= commandLen + 2 
+                  && userInput[commandLen] == ' '
+                  && userInput[commandLen + 1] != ' ' ) {
+                    // nuimame comandos pavadinima ir paliekame tik
+                    // parametrus
+                    /*int i;*/
+                    /*for (i = commandLen + 1; i < userInputLen */
+                            /*&& userInput[i] != ' '; i++) {*/
+                        /*userInput[i - (commandLen + 1)] = userInput[i];*/
+                    /*}*/
+                    // jeigu paskutinis simbolis nebuvo tarpas reikia
+                    // pastumeti simboliu skaitliuka, kad po visu
+                    // simboliu padetume eil. pab. simb.
+                    /*if (userInput[i] != ' ') {*/
+                        /*i++;*/
+                    /*}*/
+                    /*userInput[i] = '\0';*/
+                    return 2;
+            }else {
+                printf("Client error: isfile styntax:isfile filepath/filename.extension\n");
+            }
+        }
+    }
+    // nebuvo atpazinta ne viena komanda
+    return 0;
+}
