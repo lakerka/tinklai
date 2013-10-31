@@ -35,13 +35,20 @@
 #define SERVER_PORT 10000
 #define MAX_QUEUE_LENGTH 10
 
+// Maximalus is dabar egzistojanciu soketu deskriptoriaus nr.
+unsigned int maxDesc; 
 
-unsigned int maxDesc;			// Maximalus is dabar egzistojanciu soketu deskriptoriaus nr.
-fd_set mainSocketSet;			// Pagrindines programos soketu aibe.
+// Pagrindines programos soketu aibe.
+fd_set mainSocketSet; 
 
 SOCKET initializeServer ( void );
 
 int handleNewConnection ( SOCKET*, unsigned int*, fd_set* );
+
 void handleDataFromClient ( SOCKET, fd_set*);
+
+// prideti failo apraso eilute
 int addFileDescription(char* fileDescription);
+
+// patikrinti ar egzistuoja failo aprasas
 int isFileDescription(char* fileDescription);

@@ -3,9 +3,15 @@
 int main(void) {
 
     SOCKET servSockDesc;
+    
     fd_set mainSocketSet, tempSet;
+    
     unsigned int maxKnowSocketDesc, iCounter;
+    
     struct timeval TimeVal; // Laiko struktura dirbti su select().
+
+    //buferis failu aprasams nuskaityti
+    char buffer[500]; 
 
 #ifdef WIN32OS
     WSADATA wsaData;
@@ -28,9 +34,43 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
     
-    // papildome serverio turimus failus
-    addFileDescription("as/tu.txt");
-    addFileDescription("direktorija/manoFailas.txt");
+    // papildome serverio turimus failu aprasus
+	while ( 1 ) {
+  
+        char *command;
+
+		// Isvalome standartinio I/O buferi.
+        fflush ( stdin );
+        fflush ( stdout );
+        
+		// Isvalome userInput
+		memset (buffer, 0, sizeof (buffer));
+
+		// Uzklausiame vartotojo jo pasirinkimo.
+		fgets (buffer, sizeof (buffer), stdin);
+
+		buffer [strlen (buffer) - 1] = '\0';
+
+		if ( 0 == strcmp (buffer, "") ) continue;
+
+        //duomenu ivedimo pabaigos simbolis: 0
+		if ( 0 == strcmp (buffer, "0") ) break;
+
+        
+        int addingFileSuccess = addFileDescription(buffer);
+
+        // pranesame apie failo apraso pridejimo rezultata
+        if ( addingFileSuccess == 1) {
+
+            printf("Server: file description added:%s\n", buffer);
+        }else {
+
+            printf("Server: failed to add file description:%s\n", buffer);
+        }
+    }
+
+    /*addFileDescription("as/tu.txt");*/
+    /*addFileDescription("direktorija/manoFailas.txt");*/
 
     // Itraukti serverio klausanti soketa i pagrindine aibe 
     // ir pazymeti klausantiji soketa kaip maksimalu 
@@ -38,9 +78,8 @@ int main(void) {
 
     FD_SET(servSockDesc, &mainSocketSet); // ideda socketo deskript i aibe
     maxKnowSocketDesc = servSockDesc;
+    
     // Pagrindinis amzinas ciklas, kuris palaiko serveri rezimu "gyvas".
-
-    /*printf("Serverio deskriptorius: %d\n", maxKnowSocketDesc);*/
     while (1){
 
         // Kiekvienoje iteracijoje inicializuokime 
@@ -50,6 +89,7 @@ int main(void) {
         if (SOCKET_ERROR == select (maxKnowSocketDesc + 1, &tempSet, NULL, NULL, &TimeVal)) {
             exit(EXIT_FAILURE);
         }
+
         /*Musu sukurto serverio soketas klausosi. 
          * Jeigu kas nors nori i ji rasyti tada, 
          * mums reikia priimti nauja prisijungima. 
@@ -70,15 +110,12 @@ int main(void) {
                 // naujo kliento prisijungima.
 
                 if (iCounter == servSockDesc) {
+
                     // Apdorojame nauja prisijungima.
-                    /*printf("Pries klaida\n");*/
                     if (SOCKET_ERROR == handleNewConnection (&servSockDesc, 
                                 &maxKnowSocketDesc, &mainSocketSet)) {
                         printf ("Server error: acceptance of new connection was erroneous.\n");
                     }
-                    /*printf("Po klaidos\n");*/
-
-                    /*printf("%d\n", maxKnowSocketDesc);*/
                 }
 
                 // Jei tai ne nauju prisijungimu laukiancio soketo 
@@ -86,7 +123,7 @@ int main(void) {
                 // is kazkurio prisijungusio kliento.
                 // Reikia ja priimti ir atitinkamai apdoroti.
                 else {
-                    /*printf("Meginame gauti duomenis\n");     */
+
                     // Priimame ir apdorojame pranesima.
                     handleDataFromClient ((SOCKET)iCounter, &mainSocketSet);
                 }
@@ -103,7 +140,6 @@ int main(void) {
         return 1;
 
 }
-
 
 
 /*select(<SocketCount + 1>, <read>, <write>, <exception>, <block time>)*/

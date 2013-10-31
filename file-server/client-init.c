@@ -1,20 +1,29 @@
 #include	"client.h"
 
-int main (void)
-{
-	SOCKET clientSockDesc;   // Kliento pagrindinio soketo-klausytojo deskriptorius.
-	char userInput [2000];   // Masyvas vartotojo komandoms nuskaityti.
-	char *serverOutput; // rodykle serverio atsakui saugoti.
-	int sendResult;          // Siuntimo funkcijos resultatui saugoti.
-	char *packets [10];      // Buferiu masyvas duomenims gauti.
-	int quant = 0;           // Skaitliukas gautiems paketams skaiciuoti.
-	int iCounter, jCounter;  // Skaitliukai.
-	fd_set readMask;         // Reikalinga selectui.
-	struct timeval TimeVal;  // reikalinga selectui.
-	int flag;                // Veliavele.
+int main (void){
+    
+    // Kliento pagrindinio soketo-klausytojo deskriptorius.
+	SOCKET clientSockDesc;   
+	
+    char userInput [2000];  // Masyvas vartotojo komandoms nuskaityti.
+
+    char *serverOutput;     // rodykle serverio atsakui saugoti.
+
+    int sendResult;         // Siuntimo funkcijos resultatui saugoti.
+
+    char *packets [10];     // Buferiu masyvas duomenims gauti.
+
+    int quant = 0;          // Skaitliukas gautiems paketams skaiciuoti.
+
+    int iCounter, jCounter; // Skaitliukai.
+
+    fd_set readMask;        // Reikalinga selectui.
+
+    struct timeval TimeVal; // reikalinga selectui.
+
+    int flag;               // Veliavele.
 
 
-//------------------------------------------------------------
 // Jei kompiliuojama Windows tipo sistemoje, tai reikia
 // pradedant darba inicializuoti soketu biblioteka.
 #ifdef	WIN32OS
@@ -25,20 +34,17 @@ int main (void)
 		exit ( EXIT_FAILURE );
 	}
 #endif
-//------------------------------------------------------------
 
 
 	// Bandome sukurti ir suristi su reikiamu adresu ir portu serverio
 	// pagrindini deskriptoriu, t.y. inicializuojame serveri.
-	if ( INVALID_SOCKET == (clientSockDesc = initializeClient() ) )
-	{
+	if ( INVALID_SOCKET == (clientSockDesc = initializeClient() ) ) {
 		printf ("Client error: client initialization failed.\n");
 		goto EXIT;
 	}
 
 	// Amzinas ciklas, kurio pagalba vartotojas yra rezime 'gyvas'.
-	while ( 1 )
-	{
+	while ( 1 ) {
   
         char *command;
 
@@ -59,8 +65,10 @@ int main (void)
         printf("user input:%s\n", userInput);
 
         int interpretation = parseCommand(userInput);
-        // neatpazinta komanda
+        
+        // tikriname ar komanda neatpazinta
         if ( interpretation == 0 ) {
+
             printf("Client-init error: Unknown command.\n");
             continue;
         }
@@ -80,10 +88,8 @@ int main (void)
             break;
         }
         
-        /*printf("%d\n", (serverOutput == NULL));*/
         printf("Client received server response: %s\n", serverOutput);
 
-        /*printf("ERROR OCCURED\n");*/
     }
 
 	// Uzdarome soketa ir tokiu budu
@@ -91,7 +97,6 @@ int main (void)
 	closesocket (clientSockDesc);
 EXIT:
     
-//------------------------------------------------------------
 // Jei kompiliuojama Windows tipo sistemoje, tai reikia
 // baigus darba atlaisvinti soketu biblioteka.
 #ifdef	WIN32OS
@@ -101,7 +106,6 @@ EXIT:
 		exit ( EXIT_FAILURE );
 	}
 #endif
-//------------------------------------------------------------
 
 	return 1;
 }

@@ -1,21 +1,33 @@
 #include	"client.h"
 
 // Kliento inicializacija.
-SOCKET initializeClient ( void )
-{
-	SOCKET clientSockDesc;						// Kliento soketo deskriptorius.
-	char serverHostName [256] = {0};			// Hosto, kuriame paleistas serveris, vardas.
-	unsigned short int serverPortNumber;		// Porto numeris, kuriuo serveris laukia klientu.
-	struct sockaddr_in serverAddress;			// Serverio adreso struktura.
-	struct hostent *ptrServerHostEntry = NULL;	// Serverio hosto informacine struktura.
-	char temp [10] = {0};
+SOCKET initializeClient ( void ) {
+
+    // Kliento soketo deskriptorius.
+	SOCKET clientSockDesc;						
+    
+    // Hosto, kuriame paleistas serveris, vardas.
+	char serverHostName [256] = {0};			
+    
+    // Porto numeris, kuriuo serveris laukia klientu.
+	unsigned short int serverPortNumber;		
+    
+    // Serverio adreso struktura.
+	struct sockaddr_in serverAddress;			
+    
+    // Serverio hosto informacine struktura.
+	struct hostent *ptrServerHostEntry = NULL;	
+	
+    // laikingas buferis
+    char temp [10] = {0};
+
 #ifdef WIN32OS
 	const char yes = '1';
 #else
 	const int yes = 1;
 #endif
-	char* packet;							// Bufferis pasveikinimo duomenims laikyti.
-	int dummyPackQ = 0;							// Gautu paketu skaiciaus kintamasis.
+	char* packet;       // Bufferis pasveikinimo duomenims laikyti.
+	int dummyPackQ = 0; // Gautu paketu skaiciaus kintamasis.
 
 
 	// Uzklausiame vartotojo hosto, kuriame paleistas serveris, vardo.
@@ -26,7 +38,8 @@ SOCKET initializeClient ( void )
 	serverHostName [strlen (serverHostName) - 1] = '\0';
 
 
-	// Uzklausiame vartotojo porto, kuriuo serveris laukia prisijungimu, numerio.
+	// Uzklausiame vartotojo porto, 
+    // kuriuo serveris laukia prisijungimu, numerio.
 	while ( 0 == strcmp (temp, "") ) {
 		printf ("Server port number: ");
 		fgets (temp, sizeof (temp), stdin);
@@ -93,24 +106,31 @@ SOCKET initializeClient ( void )
 // 1 - komanda quit
 // 2 - komanda isfile[tarpas][failo vardas su keliu]
 int parseCommand(char* userInput) {
+
     int commandCompareResult = strcmp(userInput, "quit");
     if ( commandCompareResult == 0 ) {
         return 1;
     }
+    
     // jeigu tai ne komanda quit
     char command[] = {"isfile"};
     int commandLen = strlen(command);
     int userInputLen = strlen(userInput);
+    
     if (userInputLen >= commandLen) {
+       
         // jeigu eiluciu pradzios sutampa reiskias
         // radome komanda kuria naudotojas nori iskviesti
         int userInputMatchCommand = 1;
         int j;
+       
         for (j = 0; j < commandLen; j++) {
+       
             if ( userInput[j] != command[j] ) {
                 userInputMatchCommand = 0;
             } 
         }
+       
         if ( userInputMatchCommand == 1 ) {
             
             // po komandos turi sekti vienas tarpas
@@ -120,26 +140,18 @@ int parseCommand(char* userInput) {
             if ( userInputLen >= commandLen + 2 
                   && userInput[commandLen] == ' '
                   && userInput[commandLen + 1] != ' ' ) {
-                    // nuimame comandos pavadinima ir paliekame tik
-                    // parametrus
-                    /*int i;*/
-                    /*for (i = commandLen + 1; i < userInputLen */
-                            /*&& userInput[i] != ' '; i++) {*/
-                        /*userInput[i - (commandLen + 1)] = userInput[i];*/
-                    /*}*/
-                    // jeigu paskutinis simbolis nebuvo tarpas reikia
-                    // pastumeti simboliu skaitliuka, kad po visu
-                    // simboliu padetume eil. pab. simb.
-                    /*if (userInput[i] != ' ') {*/
-                        /*i++;*/
-                    /*}*/
-                    /*userInput[i] = '\0';*/
+
+                    // graziname reiksme kuri nurodo
+                    // kad atpazinome isfile komanda
                     return 2;
             }else {
+                
+                // nebuvo atpazinta ne viena komanda
                 printf("Client error: isfile styntax:isfile filepath/filename.extension\n");
             }
         }
     }
+
     // nebuvo atpazinta ne viena komanda
     return 0;
 }

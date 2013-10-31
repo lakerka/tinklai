@@ -1,16 +1,16 @@
-#ifndef		unix				// Jeigu tai ne unix tipo OS:
+#ifndef		unix           // Jeigu tai ne unix tipo OS:
 
-#define		WIN32OS				// 1. Apibreziame varda 'WIN32OS'.
-#include	<windows.h>			// 2. Itraukiame pagrindini winapi '.h' faila.
-#include	<winsock.h>			// 3. Itraukiame darbui su soketu api skirta '.h' faila.
-#include	<time.h>			// 4. Itraukiame darn\bui su laiku skirta '.h' faila.
+#define		WIN32OS        // 1. Apibreziame varda 'WIN32OS'.
+#include	<windows.h>    // 2. Itraukiame pagrindini winapi '.h' faila.
+#include	<winsock.h>    // 3. Itraukiame darbui su soketu api skirta '.h' faila.
+#include	<time.h>       // 4. Itraukiame darn\bui su laiku skirta '.h' faila.
 
-#else							// Priesingu atveju, jei tai unix tipo OS:
+#else                      // Priesingu atveju, jei tai unix tipo OS:
 
-#include	<sys/types.h>		// Itraukiame keleta '.h' failu, skirtu
-#include	<sys/socket.h>		// tipu apibrezimui, darbui su soketais,
-#include	<netinet/in.h>		// internetiniu strukturu, konstantu bei
-#include	<arpa/inet.h>		// funkciju apibrezimams palaikyti.
+#include	<sys/types.h>  // Itraukiame keleta '.h' failu, skirtu
+#include	<sys/socket.h> // tipu apibrezimui, darbui su soketais,
+#include	<netinet/in.h> // internetiniu strukturu, konstantu bei
+#include	<arpa/inet.h>  // funkciju apibrezimams palaikyti.
 #include	<sys/time.h>
 #include	<sys/wait.h>
 #include	<unistd.h>
